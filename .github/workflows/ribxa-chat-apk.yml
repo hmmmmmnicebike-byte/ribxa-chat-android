@@ -1,0 +1,46 @@
+
+name: Build Ribxa Chat APK
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'Ribxa-Chat-Android.zip'
+      - '.github/workflows/ribxa-chat-apk.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Get source files
+        uses: actions/checkout@v4
+
+      - name: Extract project
+        run: |
+          unzip -q Ribxa-Chat-Android.zip -d source
+          PROJECT_FILE="$(find source -name pubspec.yaml -print -quit)"
+          test -n "$PROJECT_FILE"
+          echo "PROJECT_DIR=$(dirname "$PROJECT_FILE")" >> "$GITHUB_ENV"
+
+      - name: Install Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+
+      - name: Build APK
+        run: |
+          cd "$PROJECT_DIR"
+          flutter pub get
+          flutter build apk --release
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: ribxa-chat-apk
+          path: '**/build/app/outputs/flutter-apk/app-release.apk'
+          if-no-files-fou
+          nd: error
